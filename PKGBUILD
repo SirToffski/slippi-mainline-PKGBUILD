@@ -11,7 +11,6 @@ license=('GPL2')
 depends=('alsa-lib'
          'bluez-libs'
          'bzip2'
-         'cubeb'
          'enet'
          'gcc-libs'
          'glibc'
@@ -62,8 +61,12 @@ source=(
         "$pkgname-slippi-rust-extensions::git+https://github.com/project-slippi/slippi-rust-extensions.git"
         "$pkgname-vma::git+https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git"
         "$pkgname-enet::git+https://github.com/lsalzman/enet.git"
+        "$pkgname-cubeb::git+https://github.com/mozilla/cubeb.git"
+        "$pkgname-sanitizers-cmake::git+https://github.com/arsenm/sanitizers-cmake.git"
 )
 sha512sums=('SKIP'
+            'SKIP'
+            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
@@ -80,6 +83,11 @@ prepare() {
         if [ -d 'build/' ]; then rm -rf 'build/'; fi
         mkdir 'build/'
 
+        if ["$(grep 'if (IsOpen())' "$srcdir/$_sourcedirectory/Source/Core/Common/IOFile.h")" == ""]; then
+            wget -O $srcdir/001_fix_nonnull.patch https://github.com/dolphin-emu/dolphin/commit/3da2e15e6b95f02f66df461e87c8b896e450fdab.patch
+            patch --forward -p1 < "$srcdir/001_fix_nonnull.patch"
+        fi
+
         # Provide submodules
         declare -A _submodules=(
                 [enet]='enet/enet'
@@ -88,6 +96,7 @@ prepare() {
                 [vma]='VulkanMemoryAllocator'
                 [corrosion]='corrosion'
                 [slippi-rust-extensions]='SlippiRustExtensions'
+                [cubeb]='cubeb'
         )
 
         for _submod in "${!_submodules[@]}"; do
@@ -97,6 +106,11 @@ prepare() {
                 git -c protocol.file.allow=always submodule update "$_path"
         done
 
+
+        cd Externals/cubeb/cubeb
+        git submodule init cmake/sanitizers-cmake
+        git config submodule.cmake/sanitizers-cmake.url "${srcdir}"/"$pkgname"-sanitizers-cmake
+        git -c protocol.file.allow=always submodule update cmake/sanitizers-cmake
 }
 
 pkgver() {
@@ -106,10 +120,9 @@ pkgver() {
 
 build() {
 
-
-        export LDFLAGS="-Wl,-O1,--sort-common,--as-needed,--copy-dt-needed-entries,-z,relro,-z,now"
-        export CFLAGS+=' -Wno-error=nonnull -I/usr/include/mbedtls2'
-        export CXXFLAGS+=' -Wno-error=nonnull -I/usr/include/mbedtls2'
+        export LDFLAGS="-Wl,--copy-dt-needed-entries"
+        export CFLAGS+=' -I/usr/include/mbedtls2'
+        export CXXFLAGS+=' -I/usr/include/mbedtls2'
         export LDFLAGS+=' -L/usr/lib/mbedtls2'
 
         CMAKE_FLAGS='-DLINUX_LOCAL_DEV=true -DSLIPPI_PLAYBACK=false -DUSE_SYSTEM_LIBS=ON -DENABLE_TESTS=OFF -DENABLE_NOGUI=OFF -DUSE_SYSTEM_ENET=OFF -DENABLE_CLI_TOOL=OFF -DUSE_SYSTEM_LIBMGBA=OFF -DUSE_SYSTEM_MINIZIP=OFF -Wno-dev'
