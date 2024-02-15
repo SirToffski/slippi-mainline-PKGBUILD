@@ -84,7 +84,7 @@ prepare() {
         mkdir 'build/'
 
         if ["$(grep 'if (IsOpen())' "$srcdir/$_sourcedirectory/Source/Core/Common/IOFile.h")" == ""]; then
-            wget -O $srcdir/001_fix_nonnull.patch https://github.com/dolphin-emu/dolphin/commit/3da2e15e6b95f02f66df461e87c8b896e450fdab.patch
+            curl -o $srcdir/001_fix_nonnull.patch https://github.com/dolphin-emu/dolphin/commit/3da2e15e6b95f02f66df461e87c8b896e450fdab.patch
             patch --forward -p1 < "$srcdir/001_fix_nonnull.patch"
         fi
 
