@@ -49,7 +49,7 @@ makedepends=('cmake' 'git' 'miniupnpc' 'ninja' 'python' 'qt6-base' 'qt6-svg')
 optdepends=('pulseaudio: PulseAudio backend')
 options=('!lto')
 
-commit='df9305c18797cd34c6c9bc2c6e63b4b1c4356b27'
+commit='bdd90056759b59928f21d6e8f21697c4df0ee04d'
 #tag='v4.0.0-mainline-beta.3'
 
 source=(
