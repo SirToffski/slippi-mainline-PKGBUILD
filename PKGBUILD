@@ -45,7 +45,7 @@ depends=('alsa-lib'
          'zstd'
 )
 
-makedepends=('cmake' 'git' 'miniupnpc' 'ninja' 'python' 'qt6-base' 'qt6-svg')
+makedepends=('cmake' 'git' 'miniupnpc' 'ninja' 'python' 'qt6-base' 'qt6-svg' 'cargo')
 optdepends=('pulseaudio: PulseAudio backend')
 options=('!lto')
 
