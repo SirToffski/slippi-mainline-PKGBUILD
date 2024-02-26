@@ -49,12 +49,12 @@ makedepends=('cmake' 'git' 'miniupnpc' 'ninja' 'python' 'qt6-base' 'qt6-svg')
 optdepends=('pulseaudio: PulseAudio backend')
 options=('!lto')
 
-commit='bdd90056759b59928f21d6e8f21697c4df0ee04d'
-#tag='v4.0.0-mainline-beta.3'
+#commit='bdd90056759b59928f21d6e8f21697c4df0ee04d'
+tag='v4.0.0-mainline-beta.4'
 
 source=(
-        "$pkgname::git+https://github.com/project-slippi/dolphin.git#commit=${commit}"
-        #"$pkgname::git+https://github.com/project-slippi/dolphin.git#commit=${tag}"
+        #"$pkgname::git+https://github.com/project-slippi/dolphin.git#commit=${commit}"
+        "$pkgname::git+https://github.com/project-slippi/dolphin.git#tag=${tag}"
         "$pkgname-implot::git+https://github.com/epezent/implot.git"
         "$pkgname-rcheevos::git+https://github.com/RetroAchievements/rcheevos.git"
         "$pkgname-corrosion::git+https://github.com/corrosion-rs/corrosion.git"
