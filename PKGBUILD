@@ -1,8 +1,9 @@
 _projectname='slippi'
 _mainpkgname="$_projectname-mainline"
+#_compiler="gcc-x86-64-v2"
 pkgbase="$_mainpkgname-git"
-pkgname=("$pkgbase")
-pkgver=v4.0.0.mainline.beta.3.r2162.gdf9305c187
+pkgname=("${pkgbase}")
+pkgver=v4.0.0.mainline.beta.6.r1.g21e930db20
 pkgrel=1
 pkgdesc='https://slippi.gg/about'
 arch=('x86_64')
@@ -49,12 +50,12 @@ makedepends=('cmake' 'git' 'miniupnpc' 'ninja' 'python' 'qt6-base' 'qt6-svg' 'ca
 optdepends=('pulseaudio: PulseAudio backend')
 options=('!lto')
 
-#commit='bdd90056759b59928f21d6e8f21697c4df0ee04d'
-tag='v4.0.0-mainline-beta.4'
+commit='21e930db2030f327e8540994ed37fb5bbbbae749'
+#tag='v4.0.0-mainline-beta.6'
 
 source=(
-        #"$pkgname::git+https://github.com/project-slippi/dolphin.git#commit=${commit}"
-        "$pkgname::git+https://github.com/project-slippi/dolphin.git#tag=${tag}"
+        "$pkgname::git+https://github.com/project-slippi/dolphin.git#commit=${commit}"
+        #"$pkgname::git+https://github.com/project-slippi/dolphin.git#tag=${tag}"
         "$pkgname-implot::git+https://github.com/epezent/implot.git"
         "$pkgname-rcheevos::git+https://github.com/RetroAchievements/rcheevos.git"
         "$pkgname-corrosion::git+https://github.com/corrosion-rs/corrosion.git"
@@ -79,14 +80,18 @@ _sourcedirectory="$pkgname"
 _dolphinemu="dolphin-emu"
 
 prepare() {
+
         cd "$srcdir/$_sourcedirectory/"
         if [ -d 'build/' ]; then rm -rf 'build/'; fi
         mkdir 'build/'
-
+        
+        # See https://github.com/dolphin-emu/dolphin/commit/3da2e15e6b95f02f66df461e87c8b896e450fdab for more info     
         if ["$(grep 'if (IsOpen())' "$srcdir/$_sourcedirectory/Source/Core/Common/IOFile.h")" == ""]; then
-            curl -o $srcdir/001_fix_nonnull.patch https://github.com/dolphin-emu/dolphin/commit/3da2e15e6b95f02f66df461e87c8b896e450fdab.patch
             patch --forward -p1 < "$srcdir/001_fix_nonnull.patch"
         fi
+
+        # See https://github.com/dolphin-emu/dolphin/commit/d7c93d87befcc1ee29e0355338d960b7f8d31e78 for more info
+        patch --forward -p1 < "$srcdir/002_fix_fmt.patch"
 
         # Provide submodules
         declare -A _submodules=(
@@ -113,25 +118,40 @@ prepare() {
         git -c protocol.file.allow=always submodule update cmake/sanitizers-cmake
 }
 
+
 pkgver() {
         cd "$srcdir/$_sourcedirectory/"
         git describe --long --tags | sed -e 's/-\([^-]*-g[^-]*\)$/-r\1/' -e 's/-/./g'
 }
 
 build() {
-
-        export LDFLAGS="-Wl,--copy-dt-needed-entries"
-        export CFLAGS+=' -I/usr/include/mbedtls2'
-        export CXXFLAGS+=' -I/usr/include/mbedtls2'
-        export LDFLAGS+=' -L/usr/lib/mbedtls2'
-
-        CMAKE_FLAGS='-DLINUX_LOCAL_DEV=true -DSLIPPI_PLAYBACK=false -DUSE_SYSTEM_LIBS=ON -DENABLE_TESTS=OFF -DENABLE_NOGUI=OFF -DUSE_SYSTEM_ENET=OFF -DENABLE_CLI_TOOL=OFF -DUSE_SYSTEM_LIBMGBA=OFF -DUSE_SYSTEM_MINIZIP=OFF -Wno-dev'
-
         cd "$srcdir/$_sourcedirectory/"
-        mkdir -p build
-        cd build
-        cmake ${CMAKE_FLAGS} ../
-        cmake --build . --target dolphin-emu -- -j"$(nproc)"
+        #export LDFLAGS+=" -Wl,--copy-dt-needed-entries"
+        #export CFLAGS+=' -I/usr/include/mbedtls2'
+        #export CXXFLAGS+=' -I/usr/include/mbedtls2'
+        #export LDFLAGS+=' -L/usr/lib/mbedtls2'
+
+#        CMAKE_FLAGS='-DLINUX_LOCAL_DEV=true -DSLIPPI_PLAYBACK=false -DUSE_SYSTEM_LIBS=ON -DENABLE_TESTS=OFF -DENABLE_NOGUI=OFF -DUSE_SYSTEM_ENET=OFF -DENABLE_CLI_TOOL=OFF -DUSE_SYSTEM_LIBMGBA=OFF -DUSE_SYSTEM_MINIZIP=OFF -Wno-dev'
+
+#        cd "$srcdir/$_sourcedirectory/"
+#        mkdir -p build
+#        cd build
+#        cmake ${CMAKE_FLAGS} ../
+#        cmake --build . --target dolphin-emu -- -j"$(nproc)"
+
+        cmake -S '.' -B 'build/' -G Ninja \
+                -DLINUX_LOCAL_DEV=true \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DSLIPPI_PLAYBACK=false \
+                -DUSE_SYSTEM_LIBS=ON \
+                -DENABLE_TESTS=OFF \
+                -DENABLE_NOGUI=OFF \
+                -DENABLE_CLI_TOOL=OFF \
+                -DUSE_SYSTEM_LIBMGBA=OFF \
+                -DUSE_SYSTEM_ENET=OFF \
+                -DUSE_SYSTEM_MINIZIP=OFF \
+                -Wno-dev
+        cmake --build 'build/'
 
 }
 
@@ -141,7 +161,8 @@ package() {
         conflicts=("$_mainpkgname" "slippi-online-git")
 
         cd "$srcdir/$_sourcedirectory/"
-        make DESTDIR="$pkgdir" -C 'build/' install
+        #make DESTDIR="$pkgdir" -C 'build/' install
+        DESTDIR="$pkgdir" cmake --install 'build/'
         mv "$pkgdir/usr/local/bin/$_dolphinemu" "$pkgdir/usr/local/bin/$_mainpkgname"
         cp -r "Data/Sys/" "$pkgdir/usr/local/bin/"
         rm -r "$pkgdir/usr/local/share/man/"
